@@ -1,4 +1,4 @@
-# Gallium: Automated Software Middlebox Offloadingto Programmable Switches
+# Gallium: Automated Software Middlebox Offloading to Programmable Switches
 
 This is the source code repository of the Gallium project.
 Check out [our paper](https://conferences.sigcomm.org/sigcomm/2020/camera-ready.html) for more details
