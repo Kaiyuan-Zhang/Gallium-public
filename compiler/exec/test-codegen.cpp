@@ -4,7 +4,9 @@
 #include "hir-pktop.hpp"
 #include "hir-stateop.hpp"
 #include "hir-partition.hpp"
+#include "hir-dpdkgen.hpp"
 #include "hir-p4.hpp"
+#include "p4-ir.hpp"
 #include <iostream>
 #include <fstream>
 
@@ -26,37 +28,17 @@ int main(int argc, char *argv[]) {
     replace_packet_meta_op(*ele);
     remove_unused_ops(*ele);
 
+    // auto partition_result = P4IR::partition_hir(ele);
+
+    P4IR::P4OffloadResult result;
     HIR::LabelInitFn init_fn = P4IR::p4_initial_label;
     HIR::label(*ele, init_fn);
     auto partition_result = partition(*ele->entry());
-
-    std::ofstream file;
-    file.open("part-ingress.hir", std::ios::trunc);
-    auto printer = [](std::ostream& os, const HIR::Operation& op) {
-        op.print(os);
-        if (op.dst_vars.size() > 0) {
-            os << " dst:";
-            for (auto& dst : op.dst_vars) {
-                os << " " << dst.get();
-            }
-        }
-        os << " args:";
-        for (auto& a : op.args) {
-            os << " " << a.get();
-        }
-    };
-    partition_result.pre->print(file, printer);
-    file << std::endl;
-    file.close();
-
-    file.open("part-cpu.hir", std::ios::trunc);
-    partition_result.cpu->print(file);
-    file << std::endl;
-    file.close();
-
-    file.open("part-egress.hir", std::ios::trunc);
-    partition_result.post->print(file);
-    file << std::endl;
-    file.close();
+    result.ingress_prog = P4IR::p4_program_from_function_v2(ele, partition_result.pre, false);
+    P4IR::print_p4_prog_tofino(*result.ingress_prog, std::cout);
+    return 0;
+    result.egress_prog = P4IR::p4_program_from_function_v2(ele, partition_result.post, true);
+    result.ele = std::make_shared<HIR::Element>(*ele);
+    result.ele->funcs[ele->entry_func_idx()] = partition_result.cpu;
     return 0;
 }

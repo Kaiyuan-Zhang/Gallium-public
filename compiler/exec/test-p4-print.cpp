@@ -55,49 +55,49 @@ int main(int argc, char* argv[]) {
 	auto do_tcp_snat_act = std::make_shared<Action>("do_tcp_snat");
     do_tcp_snat_act->args = {"srcAddr", "srcPort"};
     d = {"ipv4", "saddr"};
-    args = {{false, "srcAddr"}};
+    args = {HeaderRef::Arg("srcAddr")};
     do_tcp_snat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_tcp_snat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
 
 	auto do_udp_snat_act = std::make_shared<Action>("do_udp_snat");
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_udp_snat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_udp_snat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_udp_snat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
     
 	auto do_tcp_dnat_act = std::make_shared<Action>("do_tcp_dnat");
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_tcp_dnat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_tcp_dnat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
 
 	auto do_udp_dnat_act = std::make_shared<Action>("do_udp_dnat");
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_udp_dnat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_udp_dnat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
     d = {"tcp", "source"};
-    args = {{false, "srcPort"}};
+    args = {HeaderRef::Arg("srcPort")};
     do_udp_dnat_act->ops.emplace_back(
             std::make_shared<Operation>(d, args));
 

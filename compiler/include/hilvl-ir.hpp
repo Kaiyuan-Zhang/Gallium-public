@@ -50,7 +50,7 @@ namespace HIR {
 
 
     class BasicBlock;
-    struct Var;
+    class Var;
     class Operation;
 
     class Function : std::enable_shared_from_this<Function> {
@@ -223,6 +223,7 @@ namespace HIR {
         INT_SHL,
         INT_LSHR,
         INT_ASHR,
+        INT_NOT,
 
         INT_TRUNC,
         INT_ZEXT,
@@ -248,6 +249,7 @@ namespace HIR {
         size_t global_state_idx;
 
         bool is_constant = false;
+        bool is_constant_name = false;
         bool is_undef = false;
         bool is_param = false;
         bool is_global = false;

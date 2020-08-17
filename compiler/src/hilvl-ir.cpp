@@ -1085,6 +1085,8 @@ namespace HIR {
     void Var::print(std::ostream &os) const {
         if (is_constant) {
             os << constant;
+        } else if (is_constant_name) {
+            os << name;
         } else if (is_undef) {
             os << "undef";
         } else {

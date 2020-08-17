@@ -25,6 +25,32 @@ namespace HIR {
         std::string field_name;
         uint64_t offset;
         size_t field_size;
+
+        bool operator==(const PacketOpInfo& o) {
+            if (type != o.type) {
+                return false;
+            }
+            switch (type) {
+            case T::OTHER:
+                return false;
+            case T::PKT_PTR:
+                return pkt_obj == o.pkt_obj;
+            case T::PKT_HEADER_PTR:
+                return pkt_obj == o.pkt_obj && header_name == o.header_name;
+            case T::PKT_FIELD_PTR:
+                return pkt_obj == o.pkt_obj
+                    && header_name == o.header_name
+                    && field_name == o.field_name;
+            case T::PKT_W_OFFSET:
+                return pkt_obj == o.pkt_obj && offset == o.offset;
+            default:
+                return false;
+            }
+            return false;
+        }
+        bool operator!=(const PacketOpInfo& o) {
+            return !(*this == o);
+        }
     };
 
     PacketOpInfo pkt_access_trace(
@@ -46,6 +72,22 @@ namespace HIR {
             : layout(l), info_cache(c), result(i) {}
 
         void visitDefault(const Operation& op) {
+        }
+
+        void visitPhiNode(const Operation& op) {
+            std::vector<PacketOpInfo> incoming_infos;
+            assert(op.phi_info.from.size() == op.args.size());
+            for (int i = 0; i < op.phi_info.from.size(); i++) {
+                incoming_infos.emplace_back(pkt_access_trace(layout, info_cache, op.args[i]));
+            }
+            auto fst = incoming_infos[0];
+            for (int i = 1; i < incoming_infos.size(); i++) {
+                if (fst != incoming_infos[i]) {
+                    result.type = PacketOpInfo::T::OTHER;
+                    return;
+                }
+            }
+            result = fst;
         }
 
         void visitGep(const Operation& op) {

@@ -3,6 +3,22 @@
 #include "utils.hpp"
 
 namespace HIR {
+bool is_constant_op(const HIR::Operation& op) {
+    using T = HIR::Operation::T;
+    switch (op.type) {
+    case T::FUNC_CALL:
+        {
+            auto fn = remove_template(cxx_try_demangle(op.call_info.func_name));
+            if (fn == "Packet::transport_header() const"
+                || fn == "WritablePacket::ip_header() const"
+                || fn == "Packet::ip_header() const") {
+                return true;
+            }
+        }
+    default:
+        return false;
+    }
+}
 std::unordered_set<std::shared_ptr<Var>> side_effect_set(const HIR::Operation& op) {
     std::unordered_set<std::shared_ptr<Var>> result = {};
     using T = HIR::Operation::T;
@@ -32,6 +48,16 @@ bool is_pkt_field_access(const Operation& op) {
 }
 
 bool have_dep(const Operation& o1, const Operation& o2) {
+    std::unordered_set<std::shared_ptr<Var>> rs1(o1.args.begin(), o1.args.end());
+    std::unordered_set<std::shared_ptr<Var>> rs2(o2.args.begin(), o2.args.end());
+
+    if (is_constant_op(o1)) {
+        rs1 = {};
+    }
+    if (is_constant_op(o2)) {
+        rs2 = {};
+    }
+
     auto ws1 = side_effect_set(o1);
     auto ws2 = side_effect_set(o2);
 
@@ -58,14 +84,14 @@ bool have_dep(const Operation& o1, const Operation& o2) {
 
     // read-write dep
     for (auto& d : o1.dst_vars) {
-        for (auto& a : o2.args) {
+        for (auto& a : rs2) {
             if (d == a) {
                 return true;
             }
         }
     }
     for (auto& d : o2.dst_vars) {
-        for (auto& a : o1.args) {
+        for (auto& a : rs1) {
             if (d == a) {
                 return true;
             }
@@ -73,12 +99,12 @@ bool have_dep(const Operation& o1, const Operation& o2) {
     }
 
     // read-write dep
-    for (auto& a : o1.args) {
+    for (auto& a : rs1) {
         if (ws2.find(a) != ws2.end()) {
             return true;
         }
     }
-    for (auto& a : o2.args) {
+    for (auto& a : rs2) {
         if (ws1.find(a) != ws1.end()) {
             return true;
         }
@@ -386,6 +412,36 @@ void remove_by_label(
     }
 }
 
+void find_transferred_vars(
+        std::shared_ptr<Function> fst,
+        std::shared_ptr<Function> snd,
+        std::unordered_set<std::shared_ptr<Var>>& var_set) {
+    std::unordered_set<std::shared_ptr<Var>> defined_in_fst;
+
+    for (auto& bb : fst->bbs) {
+        for (auto& op : bb->ops) {
+            for (auto& dst : op->dst_vars) {
+                defined_in_fst.emplace(dst);
+            }
+        }
+    }
+
+    for (auto& bb : snd->bbs) {
+        for (auto& op : bb->ops) {
+            for (auto& a : op->args) {
+                if (a->is_constant || a->is_param
+                    || a->is_global || a->is_undef
+                    || a->is_constant_name) {
+                    continue;
+                }
+                if (defined_in_fst.find(a) != defined_in_fst.end()) {
+                    var_set.emplace(a);
+                }
+            }
+        }
+    }
+}
+
 PartitionResult partition(const Function& func) {
     PartitionResult result;
 
@@ -441,6 +497,11 @@ PartitionResult partition(const Function& func) {
     remove_empty_bb(*result.pre);
     remove_empty_bb(*result.cpu);
     remove_empty_bb(*result.post);
+
+    // now find all the transfered vars
+    find_transferred_vars(result.pre, result.cpu, result.pre_to_cpu_vars);
+    find_transferred_vars(result.pre, result.post, result.cpu_to_post_vars);
+    find_transferred_vars(result.cpu, result.post, result.cpu_to_post_vars);
     return result;
 }
 }

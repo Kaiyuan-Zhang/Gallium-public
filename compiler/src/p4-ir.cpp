@@ -94,6 +94,20 @@ namespace P4IR {
         os << "}" << std::endl;
     }
 
+    HeaderRef HeaderRef::Meta(const std::string& name) {
+        HeaderRef ret(name);
+        ret.is_meta = true;
+        ret.is_constant = false;
+        return ret;
+    }
+    
+    HeaderRef HeaderRef::Arg(const std::string& name) {
+        HeaderRef ret(name);
+        ret.is_arg = true;
+        ret.is_constant = false;
+        return ret;
+    }
+    
     void HeaderRef::print(std::ostream& os) const {
         if (is_meta) {
             os << "meta.";
@@ -135,15 +149,23 @@ namespace P4IR {
         auto topo_order = parse_graph.TopologicalSort();
 
         int num_emitted = 0;
+        std::unordered_map<int, std::string> stage_name_mapping;
         for (int i = topo_order.size() - 1; i >= 0; --i) {
             auto hdr_name = parse_graph.vertex_ref(i);
-            assert(layout.headers.find(hdr_name) != layout.headers.end());
-            os << "parser ";
+            std::string stage_name;
             if (num_emitted == 0) {
-                os << "start";
+                stage_name = "start";
             } else {
-                os << "parser_stage_" << std::to_string(num_emitted);
+                stage_name = "parser_stage_" + std::to_string(num_emitted);
             }
+            stage_name_mapping[i] = stage_name;
+            num_emitted++;
+        }
+        for (int i = topo_order.size() - 1; i >= 0; --i) {
+            auto hdr_name = parse_graph.vertex_ref(i);
+            auto stage_name = stage_name_mapping[i];
+            assert(layout.headers.find(hdr_name) != layout.headers.end());
+            os << "parser " << stage_name;
             os << " {" << std::endl;
             os << "  extract(" << hdr_name << ");" << std::endl;
             std::optional<HeaderRef> match_field = std::nullopt;
@@ -162,7 +184,7 @@ namespace P4IR {
                     assert(e.field_name.field == match_field->field);
                     auto dst = *it;
                     os << std::hex;
-                    os << "    0x" << e.value << " : " << parse_graph.vertex_ref(dst) << ";" << std::endl;
+                    os << "    0x" << e.value << " : " << stage_name_mapping[dst] << ";" << std::endl;
                     os << std::dec;
                 }
                 os << "    default : ingress;" << std::endl;
@@ -170,7 +192,6 @@ namespace P4IR {
             }
 
             os << "}" << std::endl;
-            num_emitted++;
         }
     }
 

@@ -23,6 +23,9 @@ namespace HIR {
         std::shared_ptr<Function> pre;
         std::shared_ptr<Function> cpu;
         std::shared_ptr<Function> post;
+
+        std::unordered_set<std::shared_ptr<Var>> pre_to_cpu_vars;
+        std::unordered_set<std::shared_ptr<Var>> cpu_to_post_vars;
     };
 
     PartitionResult partition(const Function &func);

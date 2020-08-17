@@ -11,23 +11,22 @@
 namespace P4IR {
     class HeaderRef {
     public:
-        HeaderRef(std::string hdr, std::string field)
+        HeaderRef(const std::string& hdr, const std::string& field)
             : is_meta(false),
               is_arg(false),
               is_constant(false),
               header(hdr),
               field(field) {}
 
-        HeaderRef(bool meta_or_arg, std::string name)
-            : is_meta(meta_or_arg),
-              is_arg(!meta_or_arg),
-              field(name) {}
-        HeaderRef(std::string constant)
+        HeaderRef(const std::string& constant)
             : is_meta(false),
               is_arg(false),
               is_constant(true),
               header(""),
               field(constant) {}
+
+        static HeaderRef Meta(const std::string& name);
+        static HeaderRef Arg(const std::string& name);
         bool is_constant = false;
         bool is_meta = false;
         bool is_arg = false;
